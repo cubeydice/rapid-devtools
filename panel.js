@@ -1,18 +1,29 @@
-// This one acts in the context of the panel in the Dev Tools
-//
-// Can use
-// chrome.devtools.*
-// chrome.extension.*
+function fetchRapidVersion() {
+  chrome.devtools.inspectedWindow.eval(
+    `
+    (function() {
+      //Retrieve version from inspected tab's window
+      return window.rapidContext.version;
+    })();
+    `,
+    function(result, isException) {
+      if (!isException) {
+        displayRapidVersion(result);
+      } else {
+        console.error("Error fetching Rapid version:", isException);
+      }
+    }
+  );
+}
 
-document.querySelector('#executescript').addEventListener('click', function() {
-    sendObjectToInspectedPage({action: "code", content: "console.log('Inline script executed')"});
-}, false);
+// Function to display the version in panel's UI
+function displayRapidVersion(rapidVersionValue) {
+  const rapidVersionElement = document.getElementById('rapidVersion');
+  rapidVersionElement.textContent = rapidVersionValue !== undefined ? `Rapid Version Detected: ${rapidVersionValue}` : "Rapid is not running";
+}
 
-document.querySelector('#insertscript').addEventListener('click', function() {
-    sendObjectToInspectedPage({action: "script", content: "inserted-script.js"});
-}, false);
+// Initial fetch of 'rapidVersion' when panel is opened
+fetchRapidVersion();
 
-document.querySelector('#insertmessagebutton').addEventListener('click', function() {
-    sendObjectToInspectedPage({action: "code", content: "document.body.innerHTML='<button>Send message to DevTools</button>'"});
-    sendObjectToInspectedPage({action: "script", content: "messageback-script.js"});
-}, false);
+// Optional: Add listener for selection changes in the Elements panel
+chrome.devtools.panels.elements.onSelectionChanged.addListener(fetchRapidVersion);
